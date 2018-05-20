@@ -1,63 +1,48 @@
 # include <Siv3D.hpp>
 # include <HamFramework.hpp>
 
-Vec2 GetStickInput()
-{
-    if(JoyCon::IsJoyConL(Gamepad(0)))
-    {
-        const auto joy = JoyCon(Gamepad(0));
-        
-        if (auto d = joy.povD8())
-        {
-            return Circular(1, *d * 45_deg);
-        }
-        else
-        {
-            return Vec2(0,0);
-        }
-    }
-    else
-    {
-        return Vec2(KeyRight.pressed() - KeyLeft.pressed(), KeyDown.pressed() - KeyUp.pressed());
-    }
-}
-
 void Main()
 {
-    Window::Resize(1280, 720);
-    Effect effect;
+    Graphics::SetBackground(ColorF(0.2));
+    Window::Resize(480, 720);
     
-    const double joystickInterval = 360_deg/8;
+    const float jumpForce = -0.5;
+    const float fallForce = 0.1;
     
-    Vec2 pos(640 - 100, 100);
-    float speed = 10.0;
+    bool isStart = false;
+    
+    Vec2 player(Window::Center().x,0);
+    float size = 20;
+    float flameSize = 5;
+    float speed = 10;
+    float force = fallForce;
+    float velocityY = 0;
     
     while (System::Update())
     {
-        Print(GetStickInput());
-        /*
-        if (JoyCon::IsJoyConL(Gamepad(0)))
+        if(isStart)
         {
-            const auto joy = JoyCon(Gamepad(0));
-
-            if (auto d = joy.povD8())
+            if(Window::Height() < player.y)
             {
-                Print(*d);
-                pos += Circular(speed, *d * joystickInterval);
+                force = jumpForce;
             }
-            
-            if (joy.button2.down())
+            float velocityTemp = player.y;
+            player.y += (player.y - velocityY) + force;
+            velocityY = velocityTemp;
+            force = fallForce;
+        
+            Vec2 dir(KeyRight.pressed() - KeyLeft.pressed(), 0);
+            if (!dir.isZero()) player.moveBy(dir.setLength(speed));
+            player.clamp(Rect(0,-500,Window::Width(),Window::Height()+1000));
+        }
+        else
+        {
+            if(KeyZ.down())
             {
-                effect.add([center = pos](double t)
-                {
-                    Circle(center, 20 + t * 200).drawFrame(10, 0, AlphaF(1.0 - t));
-                    return t < 1.0;
-                });
+                isStart = true;
             }
         }
-        */
         
-        Circle(pos, 30).draw(ColorF(0.0, 0.75, 0.9));
-        effect.update();
+        Circle(player, size).draw(ColorF(1.0, 0.4, 0.3)).drawFrame(flameSize,0);
     }
 }
